@@ -1,30 +1,14 @@
 package com.example.flink_job;
-import com.example.flink_job.Event;
-import com.google.gson.Gson;
-import lombok.val;
-import org.apache.flink.api.common.eventtime.WatermarkStrategy;
-import org.apache.flink.api.common.serialization.DeserializationSchema;
 
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
-import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
-import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-//import org.apache.flink.streaming.api.functions.source.SourceFunction;
-import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
-import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
-import org.apache.flink.streaming.util.serialization.JSONKeyValueDeserializationSchema;
 
-import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Properties;
 
 //import static jdk.management.jfr.MBeanUtils.parseTimestamp;
 
@@ -33,15 +17,10 @@ public class FlinkJob {
         // Create a StreamExecutionEnvironment
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        // Kafka consumer configuration
-        Properties kafkaProperties = new Properties();
-        kafkaProperties.setProperty("bootstrap.servers", "localhost:9092"); // Replace with your Kafka broker address
-        kafkaProperties.setProperty("group.id", "user_activity_analysis");
-
         // Define the Kafka topic name
         String topicName = "events_topic";
 
-        // Create a Kafka source using FlinkKafkaConsumer
+        // Create a Kafka source using KafkaSource
         KafkaSource<Event> kafkaConsumer =  KafkaSource.<Event> builder()
                 .setBootstrapServers("localhost:9092")
                 .setTopics(topicName)
@@ -54,7 +33,6 @@ public class FlinkJob {
         TypeInformation<Event> typeInformation = TypeInformation.of(Event.class);
 
         DataStream<Event> eventStream = env.fromSource(kafkaConsumer, WatermarkStrategy.noWatermarks(), "Kafka source",typeInformation);
-//        env.fromSource(kafkaConsumer,WatermarkStrategy.noWatermarks(),"Kafka Source",typeInformation);
 
 
 //        DataStream<Tuple2<String, Integer>> processedStream = eventStream
