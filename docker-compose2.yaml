@@ -31,7 +31,7 @@
 version: "3.8"
 services:
   jobmanager:
-    image: flink:1.12.1
+    image: flink:1.18.1
     hostname: jobmanager
     container_name: jobmanager
     ports:
@@ -41,7 +41,7 @@ services:
     command: jobmanager
 
   taskmanager:
-    image: flink:1.12.1
+    image: flink:1.18.1
     hostname: taskmanager
     container_name: taskmanager
     depends_on:

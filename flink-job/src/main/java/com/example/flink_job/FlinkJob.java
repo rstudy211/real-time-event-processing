@@ -2,6 +2,7 @@ package com.example.flink_job;
 import com.example.flink_job.Event;
 import com.google.gson.Gson;
 import lombok.val;
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.serialization.DeserializationSchema;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -9,6 +10,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
 import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 import org.apache.flink.connector.jdbc.JdbcSink;
+import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -16,6 +18,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
+import org.apache.flink.streaming.util.serialization.JSONKeyValueDeserializationSchema;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -39,29 +42,34 @@ public class FlinkJob {
         String topicName = "events_topic";
 
         // Create a Kafka source using FlinkKafkaConsumer
-        FlinkKafkaConsumer<Event> kafkaConsumer = new FlinkKafkaConsumer<>(
-                topicName,
-                new EventDeserializer(),
-                kafkaProperties);
+        KafkaSource<Event> kafkaConsumer =  KafkaSource.<Event> builder()
+                .setBootstrapServers("localhost:9092")
+                .setTopics(topicName)
+                .setGroupId("my-group-id")
+                .setValueOnlyDeserializer(new EventDeserializer())
+                .build();
+
 
         // Create a DataStream from the Kafka source
-        DataStream<Event> eventStream = env.addSource(kafkaConsumer);
+        TypeInformation<Event> typeInformation = TypeInformation.of(Event.class);
+
+        DataStream<Event> eventStream = env.fromSource(kafkaConsumer, WatermarkStrategy.noWatermarks(), "Kafka source",typeInformation);
+//        env.fromSource(kafkaConsumer,WatermarkStrategy.noWatermarks(),"Kafka Source",typeInformation);
 
 
-
-        DataStream<Tuple2<String, Integer>> processedStream = eventStream
-                .map(event -> new Event())
-//                .map(event -> new Gson().fromJson(event,Event))
-                .returns(TypeInformation.of(Event.class))
-                .keyBy(Event::getUserId)
-                .window(TumblingProcessingTimeWindows.of(Time.minutes(1)))
-//                .timeWindow(Time.minutes(1))
-                .reduce((e1, e2) -> {
-                    e1.setSessionDuration(e1.getSessionDuration() + e2.getSessionDuration());
-                    return e1;
-                })
-                .map(event -> new Tuple2<>(event.getUserId(), event.getSessionDuration()));
-
+//        DataStream<Tuple2<String, Integer>> processedStream = eventStream
+//                .map(event -> new Event())
+////                .map(event -> new Gson().fromJson(event,Event))
+//                .returns(TypeInformation.of(Event.class))
+//                .keyBy(Event::getUserId)
+//                .window(TumblingProcessingTimeWindows.of(Time.minutes(1)))
+////                .timeWindow(Time.minutes(1))
+//                .reduce((e1, e2) -> {
+//                    e1.setSessionDuration(e1.getSessionDuration() + e2.getSessionDuration());
+//                    return e1;
+//                })
+//                .map(event -> new Tuple2<>(event.getUserId(), event.getSessionDuration()));
+//
 
 
 //        JdbcSink<Tuple2<String, Integer>> jdbcSink = JdbcSink.sink(
@@ -91,7 +99,7 @@ public class FlinkJob {
 //                        .timestamp(parseTimestamp(String.valueOf(event.getTimestamp()))) // Call timestamp parsing function
 //                        .build());
 //        processedStream.addSink(jdbcSink);
-        processedStream.print();
+        eventStream.print();
         env.execute("Flink Kafka to JDBC Example");
 
     }
