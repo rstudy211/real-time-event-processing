@@ -24,6 +24,6 @@ public class EventDeserializer implements DeserializationSchema<Event> {
 
     @Override
     public TypeInformation<Event> getProducedType() {
-        return null;
+        return TypeInformation.of(Event.class);
     }
 }
