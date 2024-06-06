@@ -19,6 +19,9 @@ public class Event {
     private String productId;
     private int sessionDuration;
 
+//    public Event(String userId, Integer timeSpent) {
+//    }
+
     // Getters and Setters
 
 }

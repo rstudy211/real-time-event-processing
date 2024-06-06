@@ -33,6 +33,6 @@ public class EventGeneratorService {
         String eventJson = new Gson().toJson(event);
         logger.info("Generated Event: {}", eventJson);
 
-        kafkaProducerService.sendMessage("events_topic", eventJson);
+        kafkaProducerService.sendMessage("events_topic_1", eventJson);
     }
 }
